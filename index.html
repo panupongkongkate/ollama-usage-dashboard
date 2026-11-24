@@ -1,0 +1,775 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ollama Token & GPU Dashboard </title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0f19;
+    --card: #131a2a;
+    --card-border: #232f46;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --purple: #a855f7;
+    --emerald: #10b981;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+    --fg-strong: #ffffff;          /* heading / KPI value text */
+    --grid-line: #1e293b;          /* chart grid + progress track */
+    --chart-legend: #cbd5e1;
+  }
+  [data-theme="light"] {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --card-border: #dbe2ec;
+    --text: #1e293b;
+    --muted: #64748b;
+    --fg-strong: #0f172a;
+    --grid-line: #e2e8f0;
+    --chart-legend: #334155;
+  }
+  .tag-cline { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+  [data-theme="light"] .tag-cline { color: #9333ea; }
+  .tag-openclaw { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  [data-theme="light"] .tag-openclaw { color: #059669; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    padding: 20px 24px 40px;
+    line-height: 1.5;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--fg-strong);
+  }
+  .badge-live {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--emerald);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .btn {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.15s;
+  }
+  .btn:hover, .btn.active {
+    background: var(--accent);
+    color: #0b0f19;
+    border-color: var(--accent);
+  }
+  .lang-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 9px;
+  }
+  .lang-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .kpi-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .kpi-val {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--fg-strong);
+    letter-spacing: -0.5px;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .gpu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--grid-line);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--purple));
+    border-radius: 99px;
+  }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 1024px) {
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg-strong);
+  }
+  .tab-group {
+    display: flex;
+    gap: 6px;
+  }
+  .chart-box {
+    position: relative;
+    height: 320px;
+    width: 100%;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #1e293b;
+  }
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    background: rgba(15, 23, 42, 0.5);
+  }
+  tr:hover td {
+    background: rgba(56, 189, 248, 0.04);
+  }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-model { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+  .tag-cline { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+  .tag-openclaw { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 960px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>
+    <span>⚡ Ollama Token & GPU Usage Dashboard </span>
+    <span class="badge-live" id="liveBadge">● LIVE</span>
+  </h1>
+  <div class="controls">
+    <span id="updatedAt">กำลังโหลด...</span>
+    <button class="btn" onclick="loadStats()" data-i18n="refresh">↻ รีเฟรชตอนนี้</button>
+    <div class="lang-toggle">
+      <button class="btn lang-btn active" id="langTH" onclick="setLang('th')">ไทย</button>
+      <button class="btn lang-btn" id="langEN" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="btn" id="themeBtn" onclick="toggleTheme()" title="สวั่น Dark / Light theme">☀️</button>
+  </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="kpi-grid">
+  <div class="card">
+    <div class="kpi-title"><span data-i18n="kpiToday">📅 วันนี้ (Today)</span><span id="todayDate" style="color:var(--accent)"></span></div>
+    <div class="kpi-val" id="kpiToday">0</div>
+    <div class="kpi-sub" id="kpiTodaySub" data-i18n="subOutputReq">Output: 0 · 0 requests</div>
+  </div>
+  <div class="card">
+    <div class="kpi-title"><span data-i18n="kpiWeek">📆 สัปดาห์นี้ (This Week)</span><span id="weekLabel" style="color:var(--purple)"></span></div>
+    <div class="kpi-val" id="kpiWeek">0</div>
+    <div class="kpi-sub" id="kpiWeekSub" data-i18n="subOutputReq">Output: 0 · 0 requests</div>
+  </div>
+  <div class="card">
+    <div class="kpi-title"><span data-i18n="kpiMonth">🗓️ เดือนนี้ (This Month)</span><span id="monthLabel" style="color:var(--emerald)"></span></div>
+    <div class="kpi-val" id="kpiMonth">0</div>
+    <div class="kpi-sub" id="kpiMonthSub" data-i18n="subOutputReq">Output: 0 · 0 requests</div>
+  </div>
+  <div class="card">
+    <div class="kpi-title"><span data-i18n="kpiTotal">🔥 สะสมทั้งหมด (All-Time)</span><span data-i18n="totalLabel">Total</span></div>
+    <div class="kpi-val" id="kpiTotal">0</div>
+    <div class="kpi-sub" id="kpiTotalSub" data-i18n="subInputOutput">Input: 0 · Output: 0</div>
+  </div>
+  <div class="card">
+    <div class="kpi-title"><span data-i18n="kpiCache">⚡ KV Cache Hit & ความเร็วเฉลี่ย</span><span data-i18n="speedLabel">Speed</span></div>
+    <div class="kpi-val" id="kpiCacheHit">0%</div>
+    <div class="kpi-sub" id="kpiSpeedSub" data-i18n="subSpeed">Gen: 0 tok/s · Prompt: 0 tok/s</div>
+  </div>
+</div>
+
+<!-- Live GPU & Loaded Models -->
+<div class="gpu-grid" id="gpuContainer"></div>
+
+<!-- Charts Row -->
+<div class="chart-grid">
+  <div class="card">
+    <div class="section-header">
+      <div class="section-title" data-i18n="chartTitle">📊 ปริมาณการใช้ Token ตามช่วงเวลา (แยก Cache Read / New Input / Output)</div>
+      <div class="tab-group">
+        <button class="btn active" id="tabDay" onclick="switchPeriod('day')" data-i18n="tabDay">รายวัน (Day)</button>
+        <button class="btn" id="tabWeek" onclick="switchPeriod('week')" data-i18n="tabWeek">รายสัปดาห์ (Week)</button>
+        <button class="btn" id="tabMonth" onclick="switchPeriod('month')" data-i18n="tabMonth">รายเดือน (Month)</button>
+      </div>
+    </div>
+    <div class="chart-box">
+      <canvas id="timeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-header">
+      <div class="section-title" data-i18n="modelChartTitle">🍩 สัดส่วน Token แยกตามโมเดล</div>
+    </div>
+    <div class="chart-box">
+      <canvas id="modelChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Tables: By Model & Period Breakdown -->
+<div class="two-col">
+  <div class="card">
+    <div class="section-header">
+      <div class="section-title" data-i18n="modelTableTitle">🤖 สรุปการใช้งานแยกตามโมเดล (Usage by Model)</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="thModel">โมเดล (Model)</th>
+            <th class="num" data-i18n="thRequests">Requests</th>
+            <th class="num" data-i18n="thKvCache">KV Cache</th>
+            <th class="num" data-i18n="thNewInput">New Input</th>
+            <th class="num" data-i18n="thOutput">Output</th>
+            <th class="num" data-i18n="thTotalTokens">รวม Tokens</th>
+            <th class="num" data-i18n="thTps">tok/s</th>
+          </tr>
+        </thead>
+        <tbody id="modelTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-header">
+      <div class="section-title" id="periodTableTitle" data-i18n="periodDay">📅 ตารางสรุปรายวัน (Daily Breakdown)</div>
+    </div>
+    <div style="overflow-x:auto; max-height: 320px;">
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="thPeriod">ช่วงเวลา</th>
+            <th class="num" data-i18n="thRequests">Requests</th>
+            <th class="num" data-i18n="thFullInput">Full Input</th>
+            <th class="num" data-i18n="thKvCacheHit">KV Cache Hit</th>
+            <th class="num" data-i18n="thOutput">Output</th>
+            <th class="num" data-i18n="thTotalTokens">รวม Tokens</th>
+          </tr>
+        </thead>
+        <tbody id="periodTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Daily by Model + Recent Requests -->
+<div class="card" style="margin-bottom: 22px;">
+  <div class="section-header">
+    <div class="section-title" data-i18n="dayModelTitle">📌 การใช้งานรายวันแยกตามโมเดล (Daily Usage per Model)</div>
+  </div>
+  <div style="overflow-x:auto; max-height: 280px;">
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="thDay">วันที่ (Day)</th>
+          <th data-i18n="thModel">โมเดล (Model)</th>
+          <th class="num" data-i18n="thRequests">Requests</th>
+          <th class="num" data-i18n="thFullInputTokens">Full Input Tokens</th>
+          <th class="num" data-i18n="thOutputTokens">Output Tokens</th>
+          <th class="num" data-i18n="thTotalTokens">รวมทั้งหมด (Total Tokens)</th>
+        </tr>
+      </thead>
+      <tbody id="dayModelTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-header">
+    <div class="section-title" data-i18n="recentTitle">📜 ประวัติการเรียกใช้งาน 60 รายการล่าสุด (Recent Requests)</div>
+  </div>
+  <div style="overflow-x:auto; max-height: 420px;">
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="thDateTime">วัน-เวลา</th>
+          <th data-i18n="thModel">โมเดล</th>
+          <th data-i18n="thClient">ช่องทาง (Client)</th>
+          <th class="num" data-i18n="thFullInput">Full Input</th>
+          <th class="num" data-i18n="thKvCache">KV Cache</th>
+          <th class="num" data-i18n="thNewEval">New Eval</th>
+          <th class="num" data-i18n="thOutput">Output</th>
+          <th class="num" data-i18n="thTotalTokens">รวม Tokens</th>
+          <th class="num" data-i18n="thSpeed">ความเร็ว</th>
+          <th class="num" data-i18n="thDuration">เวลาที่ใช้</th>
+        </tr>
+      </thead>
+      <tbody id="recentTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ─── i18n: Thai / English ───────────────────────────────────────────────
+const I18N = {
+  th: {
+    title: '⚡ Ollama Token & GPU Usage Dashboard ',
+    loading: 'กำลังโหลด...',
+    updated: 'อัปเดตล่าสุด:',
+    refresh: '↻ รีเฟรชตอนนี้',
+    kpiToday: '📅 วันนี้ (Today)',
+    kpiWeek: '📆 สัปดาหนี้ (This Week)',
+    kpiMonth: '🗓️ เดือนนี้ (This Month)',
+    kpiTotal: '🔥 สะสมทั้งหมด (All-Time)',
+    totalLabel: 'Total',
+    kpiCache: '⚡ KV Cache Hit & ความเร็วเฉลี่ย',
+    speedLabel: 'Speed',
+    subOutputReq: 'Output: 0 · 0 requests',
+    subInputOutput: 'Input: 0 · Output: 0',
+    subSpeed: 'Gen: 0 tok/s · Prompt: 0 tok/s',
+    chartTitle: '📊 ปริมาณการใช้ Token ตามช่วงเวลา (แยก Cache Read / New Input / Output)',
+    tabDay: 'รายวัน (Day)',
+    tabWeek: 'รายสัปดาห์ (Week)',
+    tabMonth: 'รายเดือน (Month)',
+    modelChartTitle: '🍩 สัดส่วน Token แยกตามโมเดล',
+    modelTableTitle: '🤖 สรุปการใช้งานแยกตามโมเดล (Usage by Model)',
+    periodDay: '📅 ตารางสรุปรายวัน (Daily Breakdown)',
+    periodWeek: '📆 ตารางสรุปรายสัปดาห์ (Weekly Breakdown)',
+    periodMonth: '🗓️ ตารางสรุปรายเดือน (Monthly Breakdown)',
+    dayModelTitle: '📌 การใช้งานรายวันแยกตามโมเดล (Daily Usage per Model)',
+    recentTitle: '📜 ประวัติการเรียกใช้งาน 60 รายการล่าสุด (Recent Requests)',
+    thModel: 'โมเดล (Model)',
+    thRequests: 'Requests',
+    thKvCache: 'KV Cache',
+    thNewInput: 'New Input',
+    thOutput: 'Output',
+    thTotalTokens: 'รวม Tokens',
+    thTps: 'tok/s',
+    thPeriod: 'ช่วงเวลา',
+    thFullInput: 'Full Input',
+    thKvCacheHit: 'KV Cache Hit',
+    thDay: 'วันที่ (Day)',
+    thFullInputTokens: 'Full Input Tokens',
+    thOutputTokens: 'Output Tokens',
+    thDateTime: 'วัน-เวลา',
+    thClient: 'ช่องทาง (Client)',
+    thNewEval: 'New Eval',
+    thSpeed: 'ความเร็ว',
+    thDuration: 'เวลาที่ใช้',
+    gpuLoad: 'Load',
+    vramEmpty: 'ไม่มีโมเดลค้างใน VRAM ขณะนี้',
+    psTitle: '🧠 โมเดลที่โหลดค้างใน VRAM (ollama ps)',
+    activeSlot: 'Active Slot',
+    dsCached: 'KV Cache Hit (Input)',
+    dsEval: 'New Prompt Eval (Input)',
+    dsOutput: 'Output Tokens (Generated)',
+    tokUnit: 'tokens'
+  },
+  en: {
+    title: '⚡ Ollama Token & GPU Usage Dashboard ',
+    loading: 'Loading...',
+    updated: 'Updated:',
+    refresh: '↻ Refresh now',
+    kpiToday: '📅 Today',
+    kpiWeek: '📆 This Week',
+    kpiMonth: '🗓️ This Month',
+    kpiTotal: '🔥 All-Time Total',
+    totalLabel: 'Total',
+    kpiCache: '⚡ KV Cache Hit & Avg Speed',
+    speedLabel: 'Speed',
+    subOutputReq: 'Output: 0 · 0 requests',
+    subInputOutput: 'Input: 0 · Output: 0',
+    subSpeed: 'Gen: 0 tok/s · Prompt: 0 tok/s',
+    chartTitle: '📊 Token Usage over Time (Cache Read / New Input / Output)',
+    tabDay: 'Daily',
+    tabWeek: 'Weekly',
+    tabMonth: 'Monthly',
+    modelChartTitle: '🍩 Token Share by Model',
+    modelTableTitle: '🤖 Usage by Model',
+    periodDay: '📅 Daily Breakdown',
+    periodWeek: '📆 Weekly Breakdown',
+    periodMonth: '🗓️ Monthly Breakdown',
+    dayModelTitle: '📌 Daily Usage per Model',
+    recentTitle: '📜 Recent Requests (last 60)',
+    thModel: 'Model',
+    thRequests: 'Requests',
+    thKvCache: 'KV Cache',
+    thNewInput: 'New Input',
+    thOutput: 'Output',
+    thTotalTokens: 'Total Tokens',
+    thTps: 'tok/s',
+    thPeriod: 'Period',
+    thFullInput: 'Full Input',
+    thKvCacheHit: 'KV Cache Hit',
+    thDay: 'Day',
+    thFullInputTokens: 'Full Input Tokens',
+    thOutputTokens: 'Output Tokens',
+    thDateTime: 'Date / Time',
+    thClient: 'Client',
+    thNewEval: 'New Eval',
+    thSpeed: 'Speed',
+    thDuration: 'Duration',
+    gpuLoad: 'Load',
+    vramEmpty: 'No models loaded in VRAM right now',
+    psTitle: '🧠 Models loaded in VRAM (ollama ps)',
+    activeSlot: 'Active Slot',
+    dsCached: 'KV Cache Hit (Input)',
+    dsEval: 'New Prompt Eval (Input)',
+    dsOutput: 'Output Tokens (Generated)',
+    tokUnit: 'tokens'
+  }
+};
+let lang = localStorage.getItem('dashLang') || 'th';
+const t = (k) => (I18N[lang] && I18N[lang][k]) || k;
+
+function applyI18n() {
+  document.documentElement.lang = lang === 'th' ? 'th' : 'en';
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.getElementById('langTH').classList.toggle('active', lang === 'th');
+  document.getElementById('langEN').classList.toggle('active', lang === 'en');
+  // Re-render dynamic content (GPU cards, charts, period title) with new language
+  if (rawData) renderAll();
+}
+
+function setLang(l) {
+  if (l === lang) return;
+  lang = l;
+  localStorage.setItem('dashLang', l);
+  applyI18n();
+}
+
+// ─── Theme: Dark / Light ────────────────────────────────────────────────
+let theme = localStorage.getItem('dashTheme') || 'dark';
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  // Re-render charts so grid/legend/tick colors follow the theme
+  if (rawData) renderAll();
+}
+function toggleTheme() {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('dashTheme', theme);
+  applyTheme();
+}
+// Read a CSS variable's current value (theme-aware) for use in Chart.js
+const tc = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+// ──────────────────────────────────────────────────────────────────────────
+let rawData = null;
+let currentPeriod = 'day';
+let timeChartInstance = null;
+let modelChartInstance = null;
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+const fmtShort = (n) => {
+  n = Number(n || 0);
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+};
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    rawData = await res.json();
+    renderAll();
+  } catch (e) {
+    console.error('Failed to load stats:', e);
+  }
+}
+
+function switchPeriod(p) {
+  currentPeriod = p;
+  document.getElementById('tabDay').classList.toggle('active', p === 'day');
+  document.getElementById('tabWeek').classList.toggle('active', p === 'week');
+  document.getElementById('tabMonth').classList.toggle('active', p === 'month');
+  const titles = {
+    day: t('periodDay'),
+    week: t('periodWeek'),
+    month: t('periodMonth')
+  };
+  document.getElementById('periodTableTitle').textContent = titles[p];
+  if (rawData) renderPeriodChartAndTable();
+}
+
+function renderAll() {
+  const s = rawData.summary || {};
+  document.getElementById('updatedAt').textContent = t('updated') + ' ' + rawData.updatedAt;
+  document.getElementById('todayDate').textContent = rawData.today;
+  document.getElementById('weekLabel').textContent = rawData.thisWeek;
+  document.getElementById('monthLabel').textContent = rawData.thisMonth;
+
+  document.getElementById('kpiToday').textContent = fmt(s.today_tokens) + ' tok';
+  document.getElementById('kpiTodaySub').textContent = `Output: ${fmt(s.today_output)} · ${fmt(s.today_requests)} requests`;
+
+  document.getElementById('kpiWeek').textContent = fmt(s.week_tokens) + ' tok';
+  document.getElementById('kpiWeekSub').textContent = `Output: ${fmt(s.week_output)} · ${fmt(s.week_requests)} requests`;
+
+  document.getElementById('kpiMonth').textContent = fmt(s.month_tokens) + ' tok';
+  document.getElementById('kpiMonthSub').textContent = `Output: ${fmt(s.month_output)} · ${fmt(s.month_requests)} requests`;
+
+  document.getElementById('kpiTotal').textContent = fmt(s.total_tokens) + ' tok';
+  document.getElementById('kpiTotalSub').textContent = `Input: ${fmtShort(s.total_input)} · Output: ${fmtShort(s.total_output)} (${fmt(s.total_requests)} reqs)`;
+
+  const hitRate = s.total_input > 0 ? ((s.total_cached / s.total_input) * 100).toFixed(1) : '0.0';
+  document.getElementById('kpiCacheHit').textContent = hitRate + '% Cache Hit';
+  document.getElementById('kpiSpeedSub').textContent = `Gen: ${Number(s.avg_eval_tps || 0).toFixed(1)} tok/s · Prompt: ${Number(s.avg_prompt_tps || 0).toFixed(0)} tok/s`;
+
+  // Render GPUs & ollama ps
+  const gpuBox = document.getElementById('gpuContainer');
+  const gpus = (rawData.live && rawData.live.gpus) || [];
+  const ps = (rawData.live && rawData.live.ollamaPs) || [];
+  let gpuHtml = '';
+  for (const g of gpus) {
+    const pct = g.memTotal > 0 ? ((g.memUsed / g.memTotal) * 100).toFixed(1) : 0;
+    gpuHtml += `
+      <div class="card">
+        <div class="kpi-title"><span>🎮 GPU ${g.index}: ${g.name}</span><span>${g.temp}°C · ${t('gpuLoad')} ${g.util}%</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div style="font-size:18px;font-weight:700;color:var(--fg-strong);">VRAM: ${fmt(g.memUsed)} / ${fmt(g.memTotal)} MiB</div>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;">${pct}%</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }
+  const psText = ps.length > 0
+    ? ps.map(m => `<span class="tag tag-model">${m.name}</span> (${m.size}, ${m.processor}, ctx ${m.context})`).join('<br>')
+    : `<span style="color:var(--muted)">${t('vramEmpty')}</span>`;
+  gpuHtml += `
+    <div class="card">
+      <div class="kpi-title"><span>${t('psTitle')}</span><span>${t('activeSlot')}</span></div>
+      <div style="font-size:14px;margin-top:6px;">${psText}</div>
+    </div>`;
+  gpuBox.innerHTML = gpuHtml;
+
+  renderPeriodChartAndTable();
+  renderModelChartAndTable();
+  renderDayModelTable();
+  renderRecentTable();
+}
+
+function renderPeriodChartAndTable() {
+  const list = currentPeriod === 'day' ? rawData.byDay : (currentPeriod === 'week' ? rawData.byWeek : rawData.byMonth);
+  const labels = list.map(x => x.label);
+  const cachedData = list.map(x => x.input_cached);
+  const evalData = list.map(x => x.input_eval);
+  const outData = list.map(x => x.output_tokens);
+
+  const ctx = document.getElementById('timeChart').getContext('2d');
+  if (timeChartInstance) timeChartInstance.destroy();
+  timeChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: t('dsCached'), data: cachedData, backgroundColor: 'rgba(56, 189, 248, 0.55)', stack: 'tok' },
+        { label: t('dsEval'), data: evalData, backgroundColor: 'rgba(168, 85, 247, 0.75)', stack: 'tok' },
+        { label: t('dsOutput'), data: outData, backgroundColor: 'rgba(16, 185, 129, 0.9)', stack: 'tok' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: tc('--chart-legend') } },
+        tooltip: {
+          callbacks: {
+            label: (c) => `${c.dataset.label}: ${fmt(c.raw)} ${t('tokUnit')}`
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { color: tc('--muted') }, grid: { color: tc('--grid-line') } },
+        y: { stacked: true, ticks: { color: tc('--muted'), callback: (v) => fmtShort(v) }, grid: { color: tc('--grid-line') } }
+      }
+    }
+  });
+
+  const tbody = document.getElementById('periodTableBody');
+  tbody.innerHTML = [...list].reverse().map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--fg-strong)">${r.label}</td>
+      <td class="num">${fmt(r.requests)}</td>
+      <td class="num">${fmt(r.input_total)}</td>
+      <td class="num" style="color:var(--accent)">${fmt(r.input_cached)}</td>
+      <td class="num" style="color:var(--emerald);font-weight:600">${fmt(r.output_tokens)}</td>
+      <td class="num" style="font-weight:700;color:var(--fg-strong)">${fmt(r.total_tokens)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderModelChartAndTable() {
+  const models = rawData.byModel || [];
+  const ctx = document.getElementById('modelChart').getContext('2d');
+  if (modelChartInstance) modelChartInstance.destroy();
+  const colors = ['#38bdf8', '#a855f7', '#10b981', '#f59e0b', '#f43f5e', '#6366f1'];
+  modelChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: models.map(m => m.model),
+      datasets: [{
+        data: models.map(m => m.total_tokens),
+        backgroundColor: models.map((_, i) => colors[i % colors.length]),
+        borderColor: tc('--card'),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: tc('--chart-legend'), boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: (c) => `${c.label}: ${fmt(c.raw)} ${t('tokUnit')}`
+          }
+        }
+      }
+    }
+  });
+
+  document.getElementById('modelTableBody').innerHTML = models.map(m => `
+    <tr>
+      <td><span class="tag tag-model">${m.model}</span></td>
+      <td class="num">${fmt(m.requests)}</td>
+      <td class="num" style="color:var(--accent)">${fmt(m.input_cached)}</td>
+      <td class="num">${fmt(m.input_eval)}</td>
+      <td class="num" style="color:var(--emerald);font-weight:600">${fmt(m.output_tokens)}</td>
+      <td class="num" style="font-weight:700;color:var(--fg-strong)">${fmt(m.total_tokens)}</td>
+      <td class="num">${m.avg_tps || '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderDayModelTable() {
+  const rows = rawData.byDayModel || [];
+  document.getElementById('dayModelTableBody').innerHTML = rows.map(r => `
+    <tr>
+      <td style="font-weight:600;color:var(--fg-strong)">${r.day}</td>
+      <td><span class="tag tag-model">${r.model}</span></td>
+      <td class="num">${fmt(r.requests)}</td>
+      <td class="num">${fmt(r.input_total)}</td>
+      <td class="num" style="color:var(--emerald);font-weight:600">${fmt(r.output_tokens)}</td>
+      <td class="num" style="font-weight:700;color:var(--fg-strong)">${fmt(r.total_tokens)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderRecentTable() {
+  const rows = rawData.recent || [];
+  document.getElementById('recentTableBody').innerHTML = rows.map(r => {
+    const isOpenClaw = (r.client || '').includes('OpenClaw');
+    return `
+      <tr>
+        <td style="color:var(--muted)">${r.ts}</td>
+        <td><span class="tag tag-model">${r.model}</span></td>
+        <td><span class="tag ${isOpenClaw ? 'tag-openclaw' : 'tag-cline'}">${r.client}</span></td>
+        <td class="num">${fmt(r.input_total)}</td>
+        <td class="num" style="color:var(--accent)">${fmt(r.input_cached)}</td>
+        <td class="num">${fmt(r.input_eval)}</td>
+        <td class="num" style="color:var(--emerald);font-weight:600">${fmt(r.output_tokens)}</td>
+        <td class="num" style="font-weight:700;color:var(--fg-strong)">${fmt(r.input_total + r.output_tokens)}</td>
+        <td class="num">${r.eval_tps || 0} tok/s</td>
+        <td class="num">${r.duration_s || 0}s</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+applyTheme();
+applyI18n();
+loadStats();
+setInterval(loadStats, 15000);
+</script>
+</body>
+</html>
+
+

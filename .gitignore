@@ -1,0 +1,19 @@
+# Database (contains real usage data — never commit)
+usage.db
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+
+# Backups
+*.bak
+*.backup
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+node_modules/

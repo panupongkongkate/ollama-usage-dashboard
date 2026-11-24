@@ -1,0 +1,66 @@
+{
+  "updatedAt": "2026-11-25 00:30",
+  "today": "2026-11-25",
+  "thisWeek": "W47 (19-25 Nov)",
+  "thisMonth": "November 2026",
+  "summary": {
+    "today_tokens": 182340, "today_output": 41200, "today_requests": 128,
+    "week_tokens": 942180, "week_output": 210450, "week_requests": 642,
+    "month_tokens": 3120450, "month_output": 704200, "month_requests": 2140,
+    "total_tokens": 8421930, "total_input": 5920400, "total_output": 2501530, "total_requests": 5820,
+    "total_cached": 4210800, "avg_eval_tps": 38.4, "avg_prompt_tps": 412
+  },
+  "live": {
+    "gpus": [
+      {"index": 0, "name": "NVIDIA GeForce RTX 4060 Ti", "temp": 52, "util": 18, "memUsed": 6240, "memTotal": 16384}
+    ],
+    "ollamaPs": [
+      {"name": "qwen3:8b", "size": "5.2 GB", "processor": "GPU", "context": 32768}
+    ]
+  },
+  "byDay": [
+    {"label": "09:00", "requests": 12, "input_total": 14200, "input_cached": 9800, "input_eval": 4400, "output_tokens": 3200, "total_tokens": 17400},
+    {"label": "10:00", "requests": 18, "input_total": 22100, "input_cached": 15400, "input_eval": 6700, "output_tokens": 5100, "total_tokens": 27200},
+    {"label": "11:00", "requests": 9, "input_total": 11800, "input_cached": 8200, "input_eval": 3600, "output_tokens": 2400, "total_tokens": 14200},
+    {"label": "12:00", "requests": 24, "input_total": 31500, "input_cached": 22800, "input_eval": 8700, "output_tokens": 6900, "total_tokens": 38400},
+    {"label": "13:00", "requests": 15, "input_total": 19400, "input_cached": 13100, "input_eval": 6300, "output_tokens": 4200, "total_tokens": 23600},
+    {"label": "14:00", "requests": 21, "input_total": 27800, "input_cached": 19600, "input_eval": 8200, "output_tokens": 5800, "total_tokens": 33600},
+    {"label": "15:00", "requests": 14, "input_total": 17600, "input_cached": 12400, "input_eval": 5200, "output_tokens": 3600, "total_tokens": 21200},
+    {"label": "16:00", "requests": 15, "input_total": 18900, "input_cached": 13300, "input_eval": 5600, "output_tokens": 4100, "total_tokens": 23000}
+  ],
+  "byWeek": [
+    {"label": "W43", "requests": 512, "input_total": 720400, "input_cached": 512800, "input_eval": 207600, "output_tokens": 168200, "total_tokens": 888600},
+    {"label": "W44", "requests": 604, "input_total": 842100, "input_cached": 598400, "input_eval": 243700, "output_tokens": 196400, "total_tokens": 1038500},
+    {"label": "W45", "requests": 588, "input_total": 810300, "input_cached": 572100, "input_eval": 238200, "output_tokens": 189600, "total_tokens": 999900},
+    {"label": "W46", "requests": 651, "input_total": 888200, "input_cached": 628400, "input_eval": 259800, "output_tokens": 208300, "total_tokens": 1096500},
+    {"label": "W47", "requests": 642, "input_total": 731800, "input_cached": 518200, "input_eval": 213600, "output_tokens": 210450, "total_tokens": 942250}
+  ],
+  "byMonth": [
+    {"label": "Aug", "requests": 1820, "input_total": 2410200, "input_cached": 1702400, "input_eval": 707800, "output_tokens": 582300, "total_tokens": 2992500},
+    {"label": "Sep", "requests": 2010, "input_total": 2684100, "input_cached": 1892600, "input_eval": 791500, "output_tokens": 641200, "total_tokens": 3325300},
+    {"label": "Oct", "requests": 2240, "input_total": 2980400, "input_cached": 2101800, "input_eval": 878600, "output_tokens": 702100, "total_tokens": 3682500},
+    {"label": "Nov", "requests": 2140, "input_total": 2416250, "input_cached": 1712100, "input_eval": 704150, "output_tokens": 704200, "total_tokens": 3120450}
+  ],
+  "byModel": [
+    {"model": "qwen3:8b", "requests": 2410, "input_cached": 1820400, "input_eval": 620800, "output_tokens": 902400, "total_tokens": 3343600, "avg_tps": 41.2},
+    {"model": "llama3.1:70b", "requests": 1180, "input_cached": 1210200, "input_eval": 410600, "output_tokens": 512800, "total_tokens": 2133600, "avg_tps": 18.6},
+    {"model": "mistral:7b", "requests": 980, "input_cached": 720400, "input_eval": 248200, "output_tokens": 382100, "total_tokens": 1350700, "avg_tps": 52.8},
+    {"model": "phi3:mini", "requests": 620, "input_cached": 420800, "input_eval": 145200, "output_tokens": 221200, "total_tokens": 787200, "avg_tps": 64.3},
+    {"model": "gemma2:9b", "requests": 430, "input_cached": 280400, "input_eval": 96800, "output_tokens": 151400, "total_tokens": 528600, "avg_tps": 33.9}
+  ],
+  "byDayModel": [
+    {"day": "2026-11-25", "model": "qwen3:8b", "requests": 64, "input_total": 82400, "output_tokens": 21400, "total_tokens": 103800},
+    {"day": "2026-11-25", "model": "llama3.1:70b", "requests": 38, "input_total": 48200, "output_tokens": 12800, "total_tokens": 61000},
+    {"day": "2026-11-25", "model": "mistral:7b", "requests": 26, "input_total": 32100, "output_tokens": 8900, "total_tokens": 41000},
+    {"day": "2026-11-25", "model": "phi3:mini", "requests": 18, "input_total": 21400, "output_tokens": 6200, "total_tokens": 27600},
+    {"day": "2026-11-25", "model": "gemma2:9b", "requests": 12, "input_total": 14800, "output_tokens": 4100, "total_tokens": 18900}
+  ],
+  "recent": [
+    {"ts": "00:29:41", "model": "qwen3:8b", "client": "Cline", "input_total": 4210, "input_cached": 3120, "input_eval": 1090, "output_tokens": 820, "eval_tps": 42.1, "duration_s": 19},
+    {"ts": "00:28:12", "model": "llama3.1:70b", "client": "OpenClaw", "input_total": 6820, "input_cached": 4910, "input_eval": 1910, "output_tokens": 1240, "eval_tps": 18.4, "duration_s": 67},
+    {"ts": "00:26:55", "model": "mistral:7b", "client": "Cline", "input_total": 2840, "input_cached": 2110, "input_eval": 730, "output_tokens": 540, "eval_tps": 53.2, "duration_s": 10},
+    {"ts": "00:24:30", "model": "qwen3:8b", "client": "Cline", "input_total": 3920, "input_cached": 2840, "input_eval": 1080, "output_tokens": 760, "eval_tps": 40.8, "duration_s": 19},
+    {"ts": "00:22:18", "model": "phi3:mini", "client": "OpenClaw", "input_total": 1620, "input_cached": 1180, "input_eval": 440, "output_tokens": 320, "eval_tps": 65.1, "duration_s": 5},
+    {"ts": "00:20:04", "model": "gemma2:9b", "client": "Cline", "input_total": 2410, "input_cached": 1720, "input_eval": 690, "output_tokens": 480, "eval_tps": 34.2, "duration_s": 14}
+  ]
+}
