@@ -1,26 +1,26 @@
-# ⚡ Ollama Token & GPU Usage Dashboard
+﻿# ⚡ Ollama Token & GPU Usage Dashboard
 
-A lightweight, single-page dashboard that tracks **token usage** and **GPU/VRAM stats** for a local [Ollama](https://ollama.com) server. It parses Ollama's log files to build a SQLite history of every request (input/output/cached tokens, prompt & generation speed), then serves a live web UI.
+Dashboard แบบ single-page เบาๆ สำหรับติดตาม **การใช้ token** และ **สถิติ GPU/VRAM** ของ [Ollama](https://ollama.com) บนเครื่องท้องถิ่น โดย parse ไฟล์ log ของ Ollama มาสร้างฐานข้อมูล SQLite สถิติ request ทุกครั้ง (input/output/cached tokens, ความเร็ว prompt & generation) แล้วเสิร์ฟ UI ทางเว็บ
 
-No framework, no build step — just **Node.js** for the backend and one **HTML** file for the frontend.
+ไม่มี framework ไม่มี build step — ใช้แค่ **Node.js** สำหรับ backend และ **HTML** ไฟล์เดียวสำหรับ frontend
 
 | Dark theme | Light theme |
 |:---:|:---:|
 | ![Dark theme](docs/screenshot-dark.png) | ![Light theme](docs/screenshot-light.png) |
 
-> English UI (language toggle): ![English UI](docs/screenshot-en.png)
+> UI ภาษาอังกฤษ (มี language toggle): ![English UI](docs/screenshot-en.png)
 
-## Features
+## หน้าที่
 
-- **KPI cards** — tokens for today / this week / this month / all-time, cache-hit rate, and average prompt & generation speed.
-- **Live GPU panel** — per-GPU VRAM usage (with progress bar), temperature, and utilization, plus the currently loaded model(s) from `ollama ps`.
-- **Time-series chart** — stacked bars of cached / evaluated / output tokens, switchable between **Day · Week · Month**.
-- **Model breakdown** — doughnut chart + table of token usage per model.
-- **Recent requests** — a live feed of the latest calls with per-request token counts and speed.
-- **🌐 Language toggle (TH | EN)** — switch the entire UI between Thai and English; preference is remembered in `localStorage`.
-- **🌙 Dark / ☀️ Light theme** — one-click theme switch, also persisted in `localStorage` (defaults to dark).
+- **KPI cards** — token ของวันนี้ / สัปดาห์นี้ / เดือนนี้ / รวมทั้งหมด, cache-hit rate, ความเร็ว prompt & generation โดยเฉลี่ย
+- **Live GPU panel** — VRAM ใช้งานต่อ GPU (พร้อม progress bar), อุณหภูมิ, utilization พร้อม model ที่ load อยู่จาก `ollama ps`
+- **Time-series chart** — stacked bars ของ cached / evaluated / output tokens สลับระหว่าง **วัน · สัปดาห์ · เดือน**
+- **Model breakdown** — doughnut chart + ตาราง token usage ต่อ model
+- **Recent requests** — feed request ล่าสุดพร้อม token counts & ความเร็วต่อ request
+- **🌐 Language toggle (TH | EN)** — สลับ UI ทั้งหมดระหว่างไทย/อังกฤษ จำ preference ใน `localStorage`
+- **🌙 Dark / ☀️ Light theme** — สลับหนึ่งคลิก จำใน `localStorage` (default เป็น dark)
 
-## How it works
+## วิธีทำงาน
 
 ```
 Ollama log files  ──parse──▶  SQLite (usage.db)  ──/api/stats──▶  index.html (Chart.js)
@@ -28,40 +28,40 @@ Ollama log files  ──parse──▶  SQLite (usage.db)  ──/api/stats─�
         └── nvidia-smi / ollama ps ┘   (live GPU + loaded models)
 ```
 
-- `server.js` — an HTTP server (port **8799**) that tails Ollama's logs, stores each request in a local SQLite database, and exposes a single `GET /api/stats` endpoint returning the aggregated JSON the UI renders.
-- `index.html` — the dashboard. It polls `/api/stats` every 15 s and renders KPIs, charts (Chart.js), and tables. All i18n strings and theme colors live in this one file.
+- `server.js` — HTTP server (port **8799**) ที่ติดตาม log ของ Ollama, บันทึก request ทุกรูปลง SQLite, และเปิด endpoint เดียว `GET /api/stats` คืน JSON รวมที่ UI ใช้ render
+- `index.html` — dashboard poll `/api/stats` ทุก 15 วินาที ให้ KPI, charts (Chart.js), ตาราง — i18n strings & สีนั้น theme อยู่ในไฟล์เดียว
 
 ## Requirements
 
-- **Node.js ≥ 22** (uses the built-in `node:sqlite` module — no `npm install` needed)
-- **Ollama** running locally (the dashboard reads its logs and calls `ollama ps`)
-- **nvidia-smi** on PATH (for GPU stats; NVIDIA only)
+- **Node.js ≥ 22** (ใช้ `node:sqlite` module ในตัว — ไม่ต้อง `npm install`)
+- **Ollama** รันอยู่บนเครื่อง (dashboard ต้องการ log ของมัน + ใช้ `ollama ps`)
+- **nvidia-smi** ใน PATH (สำหรับ GPU stats; NVIDIA เท่านั้น)
 
-## Getting started
+## เริ่มใช้งาน
 
 ```bash
-git clone <your-repo-url> ollama-dashboard
+git clone <repo-url> ollama-dashboard
 cd ollama-dashboard
 node server.js
 ```
 
-Then open **http://localhost:8799** in your browser.
+จากนั้นเปิด **http://localhost:8799** ใน browser
 
-The server creates `usage.db` automatically on first run (next to `server.js`).
+server จะสร้าง `usage.db` อัตโนมัติในครั้งแรก (อยู่ข้างๆ `server.js`)
 
 ### Configuration (environment variables)
 
-All filesystem paths and the port are configurable — **no hardcoded user names or machine-specific paths** in the source. Defaults are sensible for a standard install; override via env vars if needed:
+ทุก path & port ปรับได้ — **ไม่มี hardcoded username หรือ machine-specific paths ใน source** default เหมาะกับ standard install; ปรับผ่าน env vars ถ้าจำเป็น:
 
-| Variable | Default | Description |
+| Variable | Default | คำอธิบาย |
 |---|---|---|
-| `DASH_PORT` | `8799` | HTTP port to listen on |
-| `DASH_DATA_DIR` | `<home>/ollama-dashboard` | Where `usage.db` is stored |
-| `OLLAMA_LOG_DIR` | `%LOCALAPPDATA%/Ollama` (Win) | Directory containing Ollama's log files |
-| `OLLAMA_MANIFEST_DIR` | `<home>/.ollama/models/manifests` | Ollama model manifest directory |
-| `OLLAMA_BIN` | `ollama` (or the common Windows install path) | Path to the `ollama` executable |
+| `DASH_PORT` | `8799` | HTTP port ที่จะ listen |
+| `DASH_DATA_DIR` | `<home>/ollama-dashboard` | ที่เก็บ `usage.db` |
+| `OLLAMA_LOG_DIR` | `%LOCALAPPDATA%/Ollama` (Win) | ที่อยู่ log files ของ Ollama |
+| `OLLAMA_MANIFEST_DIR` | `<home>/.ollama/models/manifests` | Model manifest directory ของ Ollama |
+| `OLLAMA_BIN` | `ollama` (หรือ Windows install path ทั่วไป) | Path ไปยัง executable `ollama` |
 
-Example:
+ตัวอย่าง:
 
 ```bash
 # Linux / macOS
@@ -71,35 +71,35 @@ OLLAMA_LOG_DIR="$HOME/.ollama/logs" DASH_PORT=9000 node server.js
 $env:DASH_PORT="9000"; node server.js
 ```
 
-## Project structure
+## โครงสร้างโปรเจกต์
 
 ```
 ollama-dashboard/
-├── index.html        # The dashboard UI (single file: HTML + CSS + JS + i18n + theme)
+├── index.html        # Dashboard UI (ไฟล์เดียว: HTML + CSS + JS + i18n + theme)
 ├── server.js         # Node HTTP server + log parser + SQLite store + /api/stats
-├── mock_server.py    # Optional: tiny Python server that serves the UI with sample data
-├── mock_data.json    # Sample /api/stats payload used by mock_server.py (for previews)
-├── .gitignore        # Excludes usage.db, logs, backups
+├── mock_server.py    # Optional: Python server เล็กๆ ที่เสิร์ฟ UI พร้อม sample data
+├── mock_data.json    # Sample /api/stats payload ที่ mock_server.py ใช้ (สำหรับ preview)
+├── .gitignore        # Exclude usage.db, logs, backups
 └── docs/
     ├── screenshot-dark.png
     ├── screenshot-light.png
     └── screenshot-en.png
 ```
 
-### Previewing without Ollama
+### Preview โดยไม่ต้อง Ollama
 
-To see the UI with sample data (no Ollama required), run the bundled mock server:
+อยากเห็น UI พร้อม sample data (ไม่ต้อง Ollama) รัน mock server ที่แนบมากับโปรเจกต์:
 
 ```bash
-python mock_server.py   # serves http://localhost:8799 with mock_data.json
+python mock_server.py   # เสิร์ฟ http://localhost:8799 พร้อม mock_data.json
 ```
 
-## Privacy & data
+## Privacy & ข้อมูล
 
-- All data stays **local** — nothing is sent to any external service.
-- `usage.db` contains your real usage history and is **git-ignored** by design. Never commit it.
-- The `docs/` screenshots use **synthetic sample data** only (no real tokens, IPs, or usernames).
+- ข้อมูลทุกอย่างอยู่ **บนเครื่อง** — ไม่ส่งไป external service ใด
+- `usage.db` มี usage history จริงของคุณ และ **git-ignored** โดย design — ห้าม commit
+- Screenshot ใน `docs/` ใช้ **synthetic sample data** เท่านั้น (ไม่มี token, IP, username จริง)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — ดู [LICENSE](LICENSE)
